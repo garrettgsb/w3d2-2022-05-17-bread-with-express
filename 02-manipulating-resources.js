@@ -437,7 +437,7 @@ const authors = [
 // Blog Actions
 
 function getBlogById(id) {
-  return blogs.find(blog => blog.id === id);
+  return blogs.find(blog => blog.id === Number(id));
 }
 
 function getBlogsForAuthor(authorId) {
@@ -458,7 +458,7 @@ function addBlog(authorName, title, body) {
 }
 
 function deleteBlog(id) {
-  const blog = getBlogById(id);
+  const blog = getBlogById(Number(id));
   if (!blog) throw new Error(`Blog with ID ${id} could not be found`);
   const blogIdx = blogs.indexOf(blog);
   blogs.splice(blogIdx, 1);
@@ -486,3 +486,91 @@ function deleteAuthor(id) {
   const authorIdx = authors.indexOf(author);
   authors.splice(authorIdx, 1);
 }
+
+
+const express = require('express');
+const app = express();
+const PORT = 12345;
+
+app.use(express.urlencoded({ extended: true }));
+
+// Blog routes
+app.get('/blogs', (request, response) => {
+  response.send(`
+  <h1>Blogs</h1>
+  <section>
+    ${blogs.map(blog => {
+      return `
+      <p><a href='/blogs/${blog.id}'>${blog.title}</a></p>
+      `
+    }).join('\n')}
+  </section>
+  <section>
+    <form method='POST' action='/blogs'>
+      <input name='title' placeholder='Title'>
+      <input name='body' placeholder='Body'>
+      <input name='authorName' placeholder='Author Name'>
+      <button>✚</button>
+    </form>
+  </section>
+  `);
+}); // Browse
+app.get('/blogs/:id', (request, response) => {
+  const blog = getBlogById(request.params.id);
+  response.send(`
+    <h1>${blog.title}</h1>
+    ${blog.body}
+    <form method='POST' action='/blogs/${blog.id}'>
+      <input name='newTitle' value='${blog.title}'>
+      <input name='newBody' value='${blog.body}'>
+      <button>✏️</button>
+    </form>
+    <form method='POST' action='/blogs/${blog.id}/delete'>
+      <button>🚮</button>
+    </form>
+    <a href='/blogs'>Back</a>
+  `);
+}); // Read
+app.post('/blogs/:id', (request, response) => {
+  editBlog(request.params.id, { title: request.body.newTitle, body: request.body.newBody });
+  response.redirect('/blogs/' + request.params.id);
+}); // Edit
+app.post('/blogs', (request, response) => {
+  const { authorName, title, body } = request.body;
+  addBlog(authorName, title, body);
+  response.redirect('/blogs');
+}) // Add
+app.post('/blogs/:id/delete', (request, response) => {
+  deleteBlog(request.params.id);
+  response.redirect('/blogs');
+}) // Delete
+
+// Author routes
+app.get('/authors'); // Browse
+app.get('/authors/:id'); // Read
+app.post('/authors/:id'); // Edit
+app.post('/authors') // Add
+app.post('/authors/:id/delete') // Delete
+
+app.listen(PORT, () => console.log('Listening on an unconventional port'));
+
+// Okay so what's our route plan? How will we do BREAD stuff to our Resources (Blogs and Authors)?
+/*
+
+GET /blogs                -> Just render the blogs array
+GET /blogs/:id            -> getBlogById()
+POST /blogs               -> addBlog()
+POST /blogs/:id           -> editBlog()
+POST /blogs/:id/delete    -> deleteBlog()
+
+GET /authors              -> Just render the authors array
+GET /authors/:id          -> getAuthorById() (Might also involve getBlogsForAuthor())
+POST /authors             -> addAuthor()
+POST /authors/:id         -> editAuthor()
+POST /authors/:id/delete  -> deleteAuthor()
+
+Bonus:
+
+GET /authors/:id/blogs    -> getBlogsForAuthor()
+
+*/

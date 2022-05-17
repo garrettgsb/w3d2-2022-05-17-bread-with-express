@@ -54,3 +54,8 @@
   Edit   - `POST /users/:id`
   Add    - `POST /users`
   Delete - `POST /users/:id/delete` (or `DELETE /users/:id` if available)
+
+  ### Why do we (...I) prefer BREAD for talking about web interface routing?
+
+    * CRUD sounds gross
+    * CRUD doesn't have the "B"
